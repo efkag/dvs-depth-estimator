@@ -2,6 +2,7 @@ from dv import AedatFile
 import os 
 import cv2
 import numpy as np
+from PIL import Image 
 
 def load_dvs_data(path):
     print('loading from: ', path)
@@ -39,9 +40,32 @@ def get_integrated_img(data,idx0,idx1,x_max,y_max):
             
     return img    
     
-
-
-
-
-
+def transform_to_frames(data,f_name,ev_per_frame=120,x_max=640, y_max=480,fps=60):
+    # calcaulate how many blocks you can form
+    n_events = len(data)
+    n_frames = int(np.floor(n_events/ev_per_frame))
+    #fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    fourcc=cv2.VideoWriter_fourcc(*'mp4v')
+    video = cv2.VideoWriter(f_name,fourcc, fps, (x_max,y_max))
+    # setup
+    idx0 = 0
+    idx1 = idx0+ev_per_frame
+    # for each block
+    for i in range(n_frames):
+        # get integrated image
+        np_img = get_integrated_img(data, idx0, idx1, x_max=x_max-1, y_max=y_max-1)
+        # create rgb channel version
+        r_channel = ((np_img == -1).astype(int))*255
+        g_channel = ((np_img == 1).astype(int))*255
+        b_channel = ((np_img == 1).astype(int))*0
+        cv_img = np.stack([r_channel,g_channel,b_channel],axis=2)
+        cv_img = cv_img.astype('uint8')
+        video.write(cv_img)
+        # attach to video
+        idx0 = idx1
+        idx1 = idx1+ev_per_frame
+        if i%fps ==0:
+            print("Seconds processed: {}".format(i/fps))
+    video.release()
+    print("Video has been saved as {}".format(f_name))
     
