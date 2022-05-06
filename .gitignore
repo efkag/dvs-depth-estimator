@@ -1,3 +1,4 @@
 *.aedat4
 *.aedat
-
+dvs-data/
+__pycache__/
